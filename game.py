@@ -5,7 +5,6 @@ from rq import Queue
 from werkzeug.contrib.cache import RedisCache
 from worker import conn
 
-
 app = Flask(__name__)
 q = Queue(connection=conn)
 
@@ -36,7 +35,6 @@ def stop():
 def get_future():
     data = cache.get("data")
     trajectories = predict_trajectory(data)
-    print trajectories
     return Response(json.dumps(trajectories), mimetype='application/json')
     
 @app.route('/cache')
@@ -51,11 +49,11 @@ def get_status():
 
 @app.route('/thruster', methods=['GET'])
 def fire_thruster():
-    theta = request.GET.get("theta")
+    theta = request.args.get("theta")
     if theta:
         cache.set("thruster_direction", theta, 3600)
     return jsonify({'valid':True})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(threaded=True,debug=True)
     

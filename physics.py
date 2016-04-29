@@ -1,7 +1,7 @@
 import numpy as np
-from skyfield.api import Loader
 from werkzeug.contrib.cache import RedisCache
-from astropy import units as u
+#from astropy import units as u
+#from skyfield.api import Loader
 import os
 
 cache = RedisCache(host='localhost', port=6379)
@@ -21,6 +21,7 @@ dt = 1e3 # time step to be used in simulation (s)
 OneMonth = 3.e6 # one month in seconds
 EarthToMoon = 370e6
 
+"""
 load = Loader(os.path.join(BASE_DIR, 'data'))
 Planets = load('de421.bsp')
 ts = load.timescale()
@@ -29,6 +30,8 @@ now = ts.now()
 sun = Planets['sun'].at(now)
 Origin = sun.position.to(u.m).value
 Ref_frame = sun.velocity.to(u.m/u.s).value
+"""
+
 
 Center_Body_Name = 'earth'
 
@@ -213,7 +216,7 @@ class CelestialBody(object):
         """
         E = .1 * 5.e12 # 10% usable Energy form dd micro-bomb (J)
 
-        v = detonation_number * np.sqrt(2.*E/self.m)
+        v = 10*detonation_number * np.sqrt(2.*E/self.m)
 
         self.vx += v*np.cos(thruster_direction)
         self.vy += v*np.sin(thruster_direction)
@@ -257,7 +260,7 @@ class CelestialBody(object):
     def in_bounds(self):
         """Check to see if the body is within bounds of the system
         """
-        return np.sqrt( self.x**2 + self.y**2 ) < 1e15
+        return np.sqrt( self.x**2 + self.y**2 ) < 10*EarthToMoon 
 
 
 def effective_gravitational_field(x, y, bodies):
@@ -404,29 +407,29 @@ def simulation():
 
     while run == 'true':
 
-        for n in range(10):
-            #mercury.move_through([sun]) 
-            #venus.move_through([sun]) 
-            #earth.move_through([sun]) 
-            moon.move_through(system) 
-            asteroid.move_through(system)
+        #mercury.move_through([sun]) 
+        #venus.move_through([sun]) 
+        #earth.move_through([sun]) 
+        moon.move_through(system) 
+        asteroid.move_through(system)
 
 
-            if asteroid.check_collisions(system):
-                print "\n\nGame over. You crashed the rock."
-                break
-            elif not asteroid.in_bounds():
-                print "\n\nGame over. You lost the Rock."
-                break
+        if asteroid.check_collisions(system):
+            print "\n\nGame over. You crashed the rock."
+            break
+        elif not asteroid.in_bounds():
+            print "\n\nGame over. You lost the Rock."
+            break
 
 
-            thruster_direction = cache.get("thruster_direction")
-            if thruster_direction:
-                asteroid.thruster(float(thruster_direction))
-                cache.set("thruster_direction", None, 3600)
+        thruster_direction = cache.get("thruster_direction")
+        if thruster_direction:
+            asteroid.thruster(float(thruster_direction))
+            cache.set("thruster_direction", None, 3600)
 
         set_cache("data", list(map(lambda body: body.data_dump(), system)))
         run = cache.get("running")
+        #time.sleep(.0001)
 
     set_cache("running", 'false')
 
